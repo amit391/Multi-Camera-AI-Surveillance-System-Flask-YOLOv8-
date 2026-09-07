@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Control Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0c0e17;
+            --card-color: #16192b;
+            --accent-color: #00e676;
+            --text-color: #f1f1f1;
+            --danger-color: #d50000;
+            --active-color: #2979ff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .system-panel {
+            background-color: var(--card-color);
+            border: 1px solid #232a45;
+            padding: 15px 30px;
+            border-radius: 30px;
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1300px;
+        }
+
+        .camera-card {
+            background-color: var(--card-color);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #232a45;
+        }
+
+        .camera-header {
+            padding: 12px;
+            background-color: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-wrapper {
+            background-color: #000;
+            width: 100%;
+            aspect-ratio: 4/3;
+        }
+
+        .stream-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Interactive Switch Toggles & Buttons */
+        .btn {
+            background-color: #232a45;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-active {
+            background-color: var(--active-color) !important;
+        }
+
+        .btn-record {
+            background-color: #333;
+        }
+
+        .btn-record.recording {
+            background-color: var(--danger-color) !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>AI Multi-Camera Control Center</h1>
+    
+    <!-- Real-time Control Hardware Panel -->
+    <div class="system-panel">
+        <button id="box-toggle" class="btn btn-active" onclick="toggleAIBoxes()">Bounding Boxes: ON</button>
+        <button id="record-toggle" class="btn btn-record" onclick="toggleRecording()">🔴 Start Recording</button>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="camera-card">
+            <div class="camera-header"><h3>Channel 01</h3></div>
+            <div class="video-wrapper">
+                <img class="stream-img" src="{{ url_for('video_feed_1') }}">
+            </div>
+        </div>
+        <div class="camera-card">
+            <div class="camera-header"><h3>Channel 02</h3></div>
+            <div class="video-wrapper">
+                <img class="stream-img" src="{{ url_for('video_feed_2') }}">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let boxesEnabled = true;
+        let recordingEnabled = false;
+
+        // Uses JS Fetch API to update AI status instantly without dropping stream sockets
+        function toggleAIBoxes() {
+            boxesEnabled = !boxesEnabled;
+            const btn = document.getElementById('box-toggle');
+            
+            fetch('/api/toggle_boxes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: boxesEnabled })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.show_boxes) {
+                    btn.classList.add('btn-active');
+                    btn.innerText = "Bounding Boxes: ON";
+                } else {
+                    btn.classList.remove('btn-active');
+                    btn.innerText = "Bounding Boxes: OFF";
+                }
+            });
+        }
+
+        function toggleRecording() {
+            recordingEnabled = !recordingEnabled;
+            const btn = document.getElementById('record-toggle');
+            
+            fetch('/api/toggle_recording', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: recordingEnabled })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.is_recording) {
+                    btn.classList.add('recording');
+                    btn.innerText = "🛑 Stop Recording";
+                } else {
+                    btn.classList.remove('recording');
+                    btn.innerText = "🔴 Start Recording";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
